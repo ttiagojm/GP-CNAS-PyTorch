@@ -1,0 +1,86 @@
+from torch import nn, optim
+import torch
+from src.pipeline import Pipeline
+
+
+def train_step(model: nn.Module, optimizer: optim, loss_fn):
+    total_loss = 0.
+    last_loss = 0.
+
+    for i, data in enumerate(Pipeline.train_data):
+        inputs, labels = data
+
+        # Reset the derivatives (gradients)
+        optimizer.zero_grad()
+
+        logits = model(inputs)
+        train_loss = loss_fn(logits, labels)
+
+        # Derivatives
+        train_loss.backward()
+        optimizer.step()
+
+        total_loss += train_loss.item()
+
+        # Print something after some batches
+        if i % 250 == 249:
+            total_loss /= 250
+            print(" Batch {} Loss: {:.4f}".format(i+1, total_loss))
+            last_loss = total_loss
+            total_loss = 0.
+
+    return last_loss
+
+def train_loop(model: nn.Module, epochs):
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = optim.SGD(model.parameters(), 0.001)
+
+    last_loss = 0.
+    last_acc = 0.
+
+    for epoch in range(epochs):
+        print("EPOCH %d" % (epoch+1))
+
+        model.train(True)
+        train_loss = train_step(model, optimizer, loss_fn)
+        model.train(False)
+
+        # Validation losses
+        val_loss = 0.
+        val_acc = 0.
+        for data in Pipeline.val_data:
+            inputs, labels = data
+            logits = model(inputs)
+
+            # Calculate loss
+            loss = loss_fn(logits, labels).item()
+            val_loss += loss
+
+            # Calculate accuracy
+            pred_labels = torch.argmax(logits, dim=-1)
+            val_acc += torch.sum(labels == pred_labels)
+
+        val_loss /= len(Pipeline.val_data)
+        val_acc /= len(Pipeline.val_data)
+        print("Train Loss: {:.4f} Val Loss: {:.4f}".format(train_loss, val_loss))
+        last_loss = val_loss
+        last_acc = val_acc
+
+    return last_loss, last_acc
+class Tree2Model(nn.Module):
+    def __init__(self, layers: list):
+        super(Tree2Model, self).__init__()
+        self.layers = layers
+
+        self.global_avg = nn.AdaptiveAvgPool2d(1)
+        self.classifier = nn.LazyLinear(Pipeline.NUM_CLASSES)
+    def forward(self, x):
+        for layer in self.layers:
+            x = layer(x)
+
+        x = self.global_avg(x)
+        # Change channel number to the last position because of the next Linear
+        x = torch.movedim(x, 1, -1)
+        x = self.classifier(x)
+
+        return torch.reshape(x, (x.shape[0], x.shape[-1]))
