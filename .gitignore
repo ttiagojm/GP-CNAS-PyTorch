@@ -129,5 +129,4 @@ dmypy.json
 .pyre/
 
 .idea/
-src/data/
-tests/data/
+data/

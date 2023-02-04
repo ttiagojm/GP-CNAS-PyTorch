@@ -7,8 +7,8 @@ def download_and_prepare(batch_size):
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
-    train_ds = torchvision.datasets.CIFAR10("data", train=True, transform=t, download=True)
-    test_ds = torchvision.datasets.CIFAR10("data", train=False, transform=t, download=True)
+    train_ds = torchvision.datasets.CIFAR10("../data", train=True, transform=t, download=True)
+    test_ds = torchvision.datasets.CIFAR10("../data", train=False, transform=t, download=True)
 
     img_size = train_ds[0][0].shape
     num_classes = len(train_ds.classes)

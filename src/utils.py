@@ -53,7 +53,6 @@ class ResBlock(nn.Module):
             nn.init.dirac_(conv.weight)
             x_identity = conv(x)
 
-        print(net.shape, x_identity.shape)
         # Sum up the tensors
         return net + x_identity
 
@@ -76,10 +75,10 @@ def resnet_block1():
     return ResBlock(
         [
             nn.LazyBatchNorm2d(),
-            StridedConv2D(16, (3, 3), strides=1),
+            StridedConv2D(16, (3, 3), stride=1),
             nn.ReLU(),
             nn.LazyBatchNorm2d(),
-            nn.LazyConv2d(16, (3, 3), strides=1),
+            nn.LazyConv2d(16, (3, 3), stride=1),
             nn.ReLU(),
         ]
     )
@@ -96,14 +95,14 @@ def resnet_block2():
             StridedConv2D(
                 16,
                 (3, 3),
-                strides=1,
+                stride=1,
             ),
             nn.ReLU(),
             nn.LazyBatchNorm2d(),
-            nn.LazyConv2d(16, (3, 3), strides=1),
+            nn.LazyConv2d(16, (3, 3), stride=1),
             nn.ReLU(),
             nn.LazyBatchNorm2d(),
-            nn.LazyConv2d(16, (3, 3), strides=1),
+            nn.LazyConv2d(16, (3, 3), stride=1),
             nn.ReLU(),
         ]
     )
@@ -117,10 +116,10 @@ def resnet_block3():
     return ResBlock(
         [
             nn.LazyBatchNorm2d(),
-            StridedConv2D(16, (3, 3), strides=1),
+            StridedConv2D(16, (3, 3), stride=1),
             nn.ReLU(),
             nn.LazyBatchNorm2d(),
-            nn.LazyConv2d(16, (1, 1), strides=1),
+            nn.LazyConv2d(16, (1, 1), stride=1),
             nn.ReLU(),
         ]
     )
@@ -137,14 +136,14 @@ def resnet_block4():
             StridedConv2D(
                 16,
                 (3, 3),
-                strides=1,
+                stride=1,
             ),
             nn.ReLU(),
             nn.LazyBatchNorm2d(),
-            nn.LazyConv2d(16, (1, 1), strides=1),
+            nn.LazyConv2d(16, (1, 1), stride=1),
             nn.ReLU(),
             nn.LazyBatchNorm2d(),
-            nn.LazyConv2d(16, (3, 3), strides=1),
+            nn.LazyConv2d(16, (3, 3), stride=1),
             nn.ReLU(),
         ]
     )
@@ -226,7 +225,7 @@ def apply_ops(model, op_func: partial, attr: str, types: tuple):
     """
     Function that applies an operation:
      - apply_filters in case of x_times_filtesr
-     - apply_strides in case of stride_factor
+     - apply_stride in case of stride_factor
 
     To apply those functions were used partial functions to specify, without running, the factor of strides or
     filtes to be multiplied.
