@@ -1,9 +1,11 @@
 import torch
-import logging
 from torch import nn
 from functools import partial
 from typing import Union
 
+
+# Select Accelerator to train and infer models
+DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 BATCH_SIZE = 32
 def get_out_channels(layers: list):
     get_out = lambda obj, name: getattr(obj, name) if hasattr(obj, name) else False
@@ -303,6 +305,3 @@ def apply_stride(factor, cur_value):
         new_val = cur_value * factor
 
     return new_val
-
-
-logging.basicConfig(format="", level=logging.INFO)

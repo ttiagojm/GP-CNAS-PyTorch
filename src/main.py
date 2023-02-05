@@ -1,11 +1,11 @@
 from __future__ import annotations
 from copy import deepcopy
-from src.pipeline import Pipeline
 from src.model import Tree2Model, train_loop
 from src.tree import GPTree, Individual, Generic
-from src.utils import concat, stride_factor
+from src.utils import concat, stride_factor, DEVICE
 import random
 import numpy as np
+import torch
 
 
 class Search:
@@ -50,7 +50,7 @@ class Search:
         :return: Test accuracy of the individual
         """
         model = Tree2Model(individual.tree.eval_tree())
-        _, acc = train_loop(model, self.epochs)
+        _, acc = train_loop(model.to(DEVICE), self.epochs)
 
         return acc
 

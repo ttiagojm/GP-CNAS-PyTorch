@@ -1,4 +1,4 @@
-import torch.utils.data
+import torch
 import torchvision
 from torchvision import transforms
 from src.utils import BATCH_SIZE

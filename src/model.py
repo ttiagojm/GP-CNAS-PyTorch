@@ -1,6 +1,7 @@
 from torch import nn, optim
 import torch
 from src.pipeline import Pipeline
+from src.utils import DEVICE
 
 
 def train_step(model: nn.Module, optimizer: optim, loss_fn):
@@ -10,7 +11,7 @@ def train_step(model: nn.Module, optimizer: optim, loss_fn):
     last_acc = 0.
 
     for i, data in enumerate(Pipeline.train_data):
-        inputs, labels = data
+        inputs, labels = data[0].to(DEVICE), data[1].to(DEVICE)
 
         # Reset the derivatives (gradients)
         optimizer.zero_grad()
@@ -60,7 +61,7 @@ def train_loop(model: nn.Module, epochs):
         val_loss = 0.
         val_acc = 0.
         for data in Pipeline.val_data:
-            inputs, labels = data
+            inputs, labels = data[0].to(DEVICE), data[1].to(DEVICE)
             logits = model(inputs)
 
             # Calculate loss
