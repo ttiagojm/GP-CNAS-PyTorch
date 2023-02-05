@@ -1,4 +1,5 @@
 import torch
+import logging
 from torch import nn
 from functools import partial
 from typing import Union
@@ -302,3 +303,6 @@ def apply_stride(factor, cur_value):
         new_val = cur_value * factor
 
     return new_val
+
+
+logging.basicConfig(format="", level=logging.INFO)
