@@ -1,5 +1,6 @@
 from __future__ import annotations
 from copy import deepcopy
+from torch import nn
 from src.model import Tree2Model, train_loop
 from src.tree import GPTree, Individual, Generic
 from src.utils import concat, stride_factor, DEVICE
@@ -48,7 +49,8 @@ class Search:
         :param individual: Object that represents an individual
         :return: Test accuracy of the individual
         """
-        model = Tree2Model(individual.tree.eval_tree())
+        layers = individual.tree.eval_tree()
+        model = Tree2Model(nn.ModuleList(layers))
         _, acc = train_loop(model.to(DEVICE), self.epochs)
 
         return acc

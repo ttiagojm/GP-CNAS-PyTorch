@@ -41,24 +41,20 @@ class ResBlock(nn.Module):
         self.layers = layers
 
     def forward(self, x):
-        # Use net as the result of feed-forward in the network
-        net = x
+        net = x.clone()
 
         for layer in self.layers:
             net = layer(net)
 
+        # Calculating the kernel size needed to downsample
         out_channels = get_out_channels(self.layers)
         k_size = (x.shape[-2] - net.shape[-2] + 1, x.shape[-1] - net.shape[-1] + 1)
 
         # Apply an convolution using its identity function (delta function)
-        with torch.no_grad():
-            conv = nn.Conv2d(x.shape[1], out_channels, k_size).to(DEVICE)
-            nn.init.dirac_(conv.weight)
-            x_identity = net + conv(x)
+        conv = nn.Conv2d(x.shape[1], out_channels, k_size).to(DEVICE)
+        nn.init.dirac_(conv.weight)
 
-        # Sum up the tensors
-        return x_identity
-
+        return net + conv(x)
 
 class StridedConv2D(nn.LazyConv2d):
     def __init__(self, *args, **kwargs):
@@ -76,14 +72,14 @@ def resnet_block1():
     :return: Resblock object initialized
     """
     return ResBlock(
-        [
+        nn.ModuleList([
             nn.LazyBatchNorm2d(device=DEVICE),
             StridedConv2D(16, (3, 3), stride=1, device=DEVICE),
             nn.ReLU(),
             nn.LazyBatchNorm2d(device=DEVICE),
             nn.LazyConv2d(16, (3, 3), stride=1,device=DEVICE),
             nn.ReLU(),
-        ]
+        ])
     ).to(DEVICE)
 
 
@@ -93,7 +89,7 @@ def resnet_block2():
         :return: Resblock object initialized
         """
     return ResBlock(
-        [
+        nn.ModuleList([
             nn.LazyBatchNorm2d(device=DEVICE),
             StridedConv2D(
                 16,
@@ -108,7 +104,7 @@ def resnet_block2():
             nn.LazyBatchNorm2d(device=DEVICE),
             nn.LazyConv2d(16, (3, 3), stride=1,device=DEVICE),
             nn.ReLU(),
-        ]
+        ])
     ).to(DEVICE)
 
 
@@ -118,14 +114,14 @@ def resnet_block3():
         :return: Resblock object initialized
         """
     return ResBlock(
-        [
+        nn.ModuleList([
             nn.LazyBatchNorm2d(device=DEVICE),
             StridedConv2D(16, (3, 3), stride=1,device=DEVICE),
             nn.ReLU(),
             nn.LazyBatchNorm2d(device=DEVICE),
             nn.LazyConv2d(16, (1, 1), stride=1,device=DEVICE),
             nn.ReLU(),
-        ]
+        ])
     ).to(DEVICE)
 
 
@@ -135,7 +131,7 @@ def resnet_block4():
         :return: Resblock object initialized
         """
     return ResBlock(
-        [
+        nn.ModuleList([
             nn.LazyBatchNorm2d(device=DEVICE),
             StridedConv2D(
                 16,
@@ -150,7 +146,7 @@ def resnet_block4():
             nn.LazyBatchNorm2d(device=DEVICE),
             nn.LazyConv2d(16, (3, 3), stride=1, device=DEVICE),
             nn.ReLU(),
-        ]
+        ])
     ).to(DEVICE)
 
 
