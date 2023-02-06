@@ -104,7 +104,7 @@ class Tree2Model(nn.Module):
 
     def __get_valid_layers(self, layers):
         # Check each resblock
-        x = next(iter(Pipeline.train_data))[0]
+        x = next(iter(Pipeline.train_data))[0].to(DEVICE)
 
         with torch.no_grad():
             for i, resblock in enumerate(layers):

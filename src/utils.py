@@ -52,12 +52,12 @@ class ResBlock(nn.Module):
 
         # Apply an convolution using its identity function (delta function)
         with torch.no_grad():
-            conv = nn.Conv2d(x.shape[1], out_channels, k_size)
+            conv = nn.Conv2d(x.shape[1], out_channels, k_size).to(DEVICE)
             nn.init.dirac_(conv.weight)
-            x_identity = conv(x)
+            x_identity = net + conv(x)
 
         # Sum up the tensors
-        return net + x_identity
+        return x_identity
 
 
 class StridedConv2D(nn.LazyConv2d):
@@ -77,14 +77,14 @@ def resnet_block1():
     """
     return ResBlock(
         [
-            nn.LazyBatchNorm2d(),
-            StridedConv2D(16, (3, 3), stride=1),
+            nn.LazyBatchNorm2d(device=DEVICE),
+            StridedConv2D(16, (3, 3), stride=1, device=DEVICE),
             nn.ReLU(),
-            nn.LazyBatchNorm2d(),
-            nn.LazyConv2d(16, (3, 3), stride=1),
+            nn.LazyBatchNorm2d(device=DEVICE),
+            nn.LazyConv2d(16, (3, 3), stride=1,device=DEVICE),
             nn.ReLU(),
         ]
-    )
+    ).to(DEVICE)
 
 
 def resnet_block2():
@@ -94,21 +94,22 @@ def resnet_block2():
         """
     return ResBlock(
         [
-            nn.LazyBatchNorm2d(),
+            nn.LazyBatchNorm2d(device=DEVICE),
             StridedConv2D(
                 16,
                 (3, 3),
                 stride=1,
+                device=DEVICE
             ),
             nn.ReLU(),
-            nn.LazyBatchNorm2d(),
-            nn.LazyConv2d(16, (3, 3), stride=1),
+            nn.LazyBatchNorm2d(device=DEVICE),
+            nn.LazyConv2d(16, (3, 3), stride=1,device=DEVICE),
             nn.ReLU(),
-            nn.LazyBatchNorm2d(),
-            nn.LazyConv2d(16, (3, 3), stride=1),
+            nn.LazyBatchNorm2d(device=DEVICE),
+            nn.LazyConv2d(16, (3, 3), stride=1,device=DEVICE),
             nn.ReLU(),
         ]
-    )
+    ).to(DEVICE)
 
 
 def resnet_block3():
@@ -118,14 +119,14 @@ def resnet_block3():
         """
     return ResBlock(
         [
-            nn.LazyBatchNorm2d(),
-            StridedConv2D(16, (3, 3), stride=1),
+            nn.LazyBatchNorm2d(device=DEVICE),
+            StridedConv2D(16, (3, 3), stride=1,device=DEVICE),
             nn.ReLU(),
-            nn.LazyBatchNorm2d(),
-            nn.LazyConv2d(16, (1, 1), stride=1),
+            nn.LazyBatchNorm2d(device=DEVICE),
+            nn.LazyConv2d(16, (1, 1), stride=1,device=DEVICE),
             nn.ReLU(),
         ]
-    )
+    ).to(DEVICE)
 
 
 def resnet_block4():
@@ -135,21 +136,22 @@ def resnet_block4():
         """
     return ResBlock(
         [
-            nn.LazyBatchNorm2d(),
+            nn.LazyBatchNorm2d(device=DEVICE),
             StridedConv2D(
                 16,
                 (3, 3),
                 stride=1,
+                device=DEVICE
             ),
             nn.ReLU(),
-            nn.LazyBatchNorm2d(),
-            nn.LazyConv2d(16, (1, 1), stride=1),
+            nn.LazyBatchNorm2d(device=DEVICE),
+            nn.LazyConv2d(16, (1, 1), stride=1, device=DEVICE),
             nn.ReLU(),
-            nn.LazyBatchNorm2d(),
-            nn.LazyConv2d(16, (3, 3), stride=1),
+            nn.LazyBatchNorm2d(device=DEVICE),
+            nn.LazyConv2d(16, (3, 3), stride=1, device=DEVICE),
             nn.ReLU(),
         ]
-    )
+    ).to(DEVICE)
 
 
 def concat(t1: Union[list, ResBlock], t2: Union[list, ResBlock]):

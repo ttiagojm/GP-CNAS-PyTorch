@@ -5,7 +5,6 @@ from src.tree import GPTree, Individual, Generic
 from src.utils import concat, stride_factor, DEVICE
 import random
 import numpy as np
-import torch
 
 
 class Search:
