@@ -2,3 +2,4 @@ numpy~=1.24.2
 torch~=1.13.1+cu117
 torchvision~=0.14.1
 setuptools~=65.5.1
+tqdm~=4.64.1

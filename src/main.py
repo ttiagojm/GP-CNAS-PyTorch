@@ -1,9 +1,8 @@
 from __future__ import annotations
 from copy import deepcopy
-from torch import nn
-from src.model import Tree2Model, train_loop
+from src.model import Tree2Model, train_loop, is_valid_layers, DEVICE
 from src.tree import GPTree, Individual, Generic
-from src.utils import concat, stride_factor, DEVICE
+from src.utils import concat, stride_factor
 import random
 import numpy as np
 
@@ -50,8 +49,12 @@ class Search:
         :return: Test accuracy of the individual
         """
         layers = individual.tree.eval_tree()
-        model = Tree2Model(nn.ModuleList(layers))
-        _, acc = train_loop(model.to(DEVICE), self.epochs)
+
+        if is_valid_layers(layers):
+            model = Tree2Model(layers)
+            _, acc = train_loop(model.to(DEVICE), self.epochs)
+        else:
+            acc = -1
 
         return acc
 
@@ -374,7 +377,7 @@ class Search:
 
 
 def main():
-    EPOCHS = 5
+    EPOCHS = 2
     GENERATIONS = 1
     MAX_DEPTH = 10
     N_POP = 3

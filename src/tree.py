@@ -5,14 +5,15 @@ from copy import deepcopy
 from src.utils import (
     concat,
     stride_factor,
-    resnet_block1,
-    resnet_block2,
-    resnet_block3,
-    resnet_block4,
     two_times_filters,
     three_times_filters,
 )
-
+from src.model import (
+    ResBlock1,
+    ResBlock2,
+    ResBlock3,
+    ResBlock4,
+)
 
 class Individual(object):
     def __init__(self, tree=None):
@@ -30,7 +31,7 @@ class GPTree(object):
 
     # Save all terminals and non-terminals
     nt = [concat, stride_factor, two_times_filters, three_times_filters]
-    t = [resnet_block1, resnet_block2, resnet_block3, resnet_block4]
+    t = [ResBlock1, ResBlock2, ResBlock3, ResBlock4]
     binary = {concat}
 
     def __init__(self):
