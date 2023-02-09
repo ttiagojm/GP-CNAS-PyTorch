@@ -1,35 +1,20 @@
 from torch import nn, optim
-from torchvision import datasets, transforms
-import torch
 from tqdm import tqdm
+from src.config import DEVICE
+import torch
+import torch.nn.functional as F
 
-# Select Accelerator to train and infer models
-DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-BATCH_SIZE = 32
+def create_zero_pad(in_data):
+    with torch.no_grad():
+        # Select min and max (channels) size Tensors
+        small_ch_id, large_ch_id = (0, 1) if in_data[0].shape[1] < in_data[1].shape[1] else (1, 0)
+        pad_num = int(in_data[large_ch_id].shape[1] - in_data[small_ch_id].shape[1])
+        zero_pad = torch.zeros_like(in_data[large_ch_id])[:, :pad_num, :, :]
 
-t = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-])
-train_ds = datasets.CIFAR10("../data", train=True, transform=t, download=True)
-test_ds = datasets.CIFAR10("../data", train=False, transform=t, download=True)
-
-IMG_SIZE = train_ds[0][0].shape
-NUM_CLASSES = len(train_ds.classes)
-
-# Calculate sizes -> 80% train (90% train and 10% validation) and 20% test
-train_size = int(len(train_ds) * 0.8)
-val_size = len(train_ds) - train_size
-
-train_ds, val_ds = torch.utils.data.random_split(train_ds, [train_size, val_size])
-
-# Prepare dataloaders
-train_data = torch.utils.data.DataLoader(train_ds, BATCH_SIZE, shuffle=True)
-val_data = torch.utils.data.DataLoader(val_ds, BATCH_SIZE, shuffle=True)
-test_data = torch.utils.data.DataLoader(test_ds, BATCH_SIZE, shuffle=True)
+        return small_ch_id, zero_pad
 
 
-def train_step(model: nn.Module, optimizer: optim, loss_fn):
+def train_step(train_data, model: nn.Module, optimizer: optim, loss_fn):
     total_loss = 0.
     total_acc = 0.
     last_loss = 0.
@@ -40,7 +25,8 @@ def train_step(model: nn.Module, optimizer: optim, loss_fn):
         inputs, labels = data[0].to(DEVICE), data[1].to(DEVICE)
 
         # Reset the derivatives (gradients)
-        optimizer.zero_grad()
+        for param in model.parameters():
+            param.grad = None
 
         logits = model(inputs)
         train_loss = loss_fn(logits, labels)
@@ -69,26 +55,26 @@ def train_step(model: nn.Module, optimizer: optim, loss_fn):
     return last_loss, last_acc
 
 
-def train_loop(model: nn.Module, epochs):
+def train_loop(pipeline, model: nn.Module, epochs):
     loss_fn = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), 0.01)
 
     last_loss = 0.
     last_acc = 0.
-    num_val_batches = len(val_data)
+    num_val_batches = len(pipeline.val_data)
 
     for epoch in range(epochs):
         print("EPOCH %d" % (epoch + 1))
 
         model.train()
-        train_loss, train_acc = train_step(model, optimizer, loss_fn)
+        train_loss, train_acc = train_step(pipeline.train_data, model, optimizer, loss_fn)
         model.eval()
 
         # Validation losses
         with torch.no_grad():
             val_loss = 0.
             val_acc = 0.
-            for data in val_data:
+            for data in pipeline.val_data:
                 inputs, labels = data[0].to(DEVICE), data[1].to(DEVICE)
                 logits = model(inputs)
 
@@ -111,13 +97,13 @@ def train_loop(model: nn.Module, epochs):
 
 
 class Tree2Model(nn.Module):
-    def __init__(self, layers: list):
+    def __init__(self, layers: list, num_classes):
         super(Tree2Model, self).__init__()
 
         self.layers = nn.Sequential(*layers)
 
         self.global_avg = nn.AdaptiveAvgPool2d(1)
-        self.classifier = nn.LazyLinear(NUM_CLASSES)
+        self.classifier = nn.LazyLinear(num_classes)
 
     def forward(self, x):
         x = self.layers(x)
@@ -130,10 +116,9 @@ class Tree2Model(nn.Module):
         return torch.reshape(x, (x.shape[0], x.shape[-1]))
 
 
-def is_valid_layers(layers: list):
+def is_valid_layers(layers: list, x):
     with torch.no_grad():
         # Check each resblock
-        x = next(iter(train_data))[0].to(DEVICE)
         for i, resblock in enumerate(layers):
             if x.shape[-2] < 3 or x.shape[-1] < 3:
                 return False
@@ -157,20 +142,22 @@ class ResBlock(nn.Module):
         self.layers = None
 
     def forward(self, x):
-        net = x.clone()
+        net = self.layers(x)
 
-        net = self.layers(net)
-
+        # Calculate pool_size to downsample
         with torch.no_grad():
-            # Calculating the kernel size needed to downsample
-            out_channels = get_out_channels(self.layers)
-            k_size = (x.shape[-2] - net.shape[-2] + 1, x.shape[-1] - net.shape[-1] + 1)
+            in_data = [x, net]
+            k_size = x.shape[2] - net.shape[2] + 1
 
-        # Apply an convolution using its identity function (delta function)
-        conv = nn.Conv2d(x.shape[1], out_channels, k_size).to(DEVICE)
-        nn.init.dirac_(conv.weight)
+        # Downsample original input
+        in_data[0] = F.max_pool2d(in_data[0], (k_size, k_size), 1)
 
-        return net + conv(x)
+        # Concat zero pad channels
+        small_ch_id, zero_pad = create_zero_pad(in_data)
+
+        in_data[small_ch_id] = torch.cat((in_data[small_ch_id], zero_pad), dim=1)
+
+        return F.relu(in_data[0] + in_data[1])
 
 
 class ResBlock1(ResBlock):

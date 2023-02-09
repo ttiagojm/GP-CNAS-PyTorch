@@ -1,4 +1,3 @@
-import torch
 from torch import nn
 from functools import partial
 from typing import Union

@@ -1,8 +1,10 @@
 from __future__ import annotations
 from copy import deepcopy
-from src.model import Tree2Model, train_loop, is_valid_layers, DEVICE
+from src.model import Tree2Model, train_loop, is_valid_layers
 from src.tree import GPTree, Individual, Generic
 from src.utils import concat, stride_factor
+from src.pipeline import Pipeline
+from src.config import DEVICE
 import random
 import numpy as np
 
@@ -10,6 +12,7 @@ import numpy as np
 class Search:
     def __init__(
             self,
+            pipeline,
             gen: int,
             n_pop: int,
             max_depth: int,
@@ -27,6 +30,7 @@ class Search:
         :param mate_prob: Crossover probability
         :param mut_prob: Mutation probability
         """
+        self.pipeline = pipeline
         self.gen = gen
         self.n_pop = n_pop
         self.max_depth = max_depth
@@ -50,9 +54,11 @@ class Search:
         """
         layers = individual.tree.eval_tree()
 
-        if is_valid_layers(layers):
-            model = Tree2Model(layers)
-            _, acc = train_loop(model.to(DEVICE), self.epochs)
+        x = next(iter(self.pipeline.train_data))[0].to(DEVICE)
+
+        if is_valid_layers(layers, x):
+            model = Tree2Model(layers, self.pipeline.NUM_CLASSES).to(DEVICE)
+            _, acc = train_loop(self.pipeline, model, self.epochs)
         else:
             acc = -1
 
@@ -377,12 +383,14 @@ class Search:
 
 
 def main():
-    EPOCHS = 2
-    GENERATIONS = 1
+    EPOCHS = 5
+    GENERATIONS = 10
     MAX_DEPTH = 10
-    N_POP = 3
+    N_POP = 12
 
-    search = Search(GENERATIONS, N_POP, MAX_DEPTH, EPOCHS)
+    pipeline = Pipeline()
+
+    search = Search(pipeline, GENERATIONS, N_POP, MAX_DEPTH, EPOCHS)
 
     search.search_loop()
 
